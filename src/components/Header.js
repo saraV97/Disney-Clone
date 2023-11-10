@@ -1,7 +1,13 @@
 import styled from "styled-components";
-// import { auth, provider } from "../firebase";
+import { auth, provider } from "../firebase";
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+// import { firebaseConfig } from "../firebase";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -9,8 +15,9 @@ import {
   selectUserName,
   selectUserPhoto,
   setUserLoginDetails,
+  setSignOutState,
 } from "../features/users/userSlice";
-import React from "react";
+import React, { useEffect } from "react";
 
 const Header = () => {
   const dispatch = useDispatch();
@@ -18,28 +25,40 @@ const Header = () => {
   const userName = useSelector(selectUserName);
   const userPhoto = useSelector(selectUserPhoto);
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyCpVBuBxamH0SyaNDXkKHsdSax2QBBWO10",
-    authDomain: "disney-clone-876ce.firebaseapp.com",
-    projectId: "disney-clone-876ce",
-    storageBucket: "disney-clone-876ce.appspot.com",
-    messagingSenderId: "555579321626",
-    appId: "1:555579321626:web:c96523c5cd28ca20d290a3",
-    measurementId: "G-EZ2LNEVEKL",
-  };
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth();
-  const provider = new GoogleAuthProvider();
+  // const app = initializeApp(firebaseConfig);
+  // const db = getFirestore(app);
+  // const auth = getAuth();
+  // const provider = new GoogleAuthProvider();
+
   const handlerAuth = () => {
-    signInWithPopup(auth, provider)
-      .then((result) => {
-        setUser(result.user);
-      })
-      .catch((error) => {
-        alert(error.message);
-      });
+    if (!userName) {
+      signInWithPopup(auth, provider)
+        .then((result) => {
+          setUser(result.user);
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    } else if (userName) {
+      signOut(auth)
+        .then(() => {
+          dispatch(setSignOutState());
+          history("/");
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
   };
+
+  useEffect(() => {
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        setUser(user);
+        history("/home");
+      }
+    });
+  }, [userName]);
 
   const setUser = (user) => {
     dispatch(
@@ -83,7 +102,10 @@ const Header = () => {
               <span>Watchlist</span>
             </a>
           </NavMenu>
-          <UserImg src={userPhoto} alt={userName} />
+          <SignOut>
+            <UserImg src={userPhoto} alt={userName} />
+            <DropDown onClick={handlerAuth}>Sign Out</DropDown>
+          </SignOut>
         </>
       )}
     </Nav>
@@ -197,5 +219,43 @@ const Login = styled.a`
 `;
 const UserImg = styled.img`
   height: 100%;
+`;
+
+const DropDown = styled.div`
+  position: absolute;
+  top: 48px;
+  right: 0px;
+  background: rgb(19, 19, 19);
+  border: 1px solid rgba(151, 151, 151, 0.34);
+  border-radius: 4px;
+  letter-spacing: 1.42px;
+  box-shadow: rgb(0 0 0/50%) 0px 0px 18px 0px;
+  padding: 10px;
+  font-size: 14px;
+  width: 100px;
+  opacity: 0;
+`;
+
+const SignOut = styled.div`
+  position: relative;
+  height: 48px;
+  width: 48px;
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+
+  ${UserImg} {
+    border-radius: 50% 50%;
+    weight: 100%;
+    height: 100%;
+  }
+
+  &:hover {
+    ${DropDown} {
+      opacity: 1;
+      transition-timing: 1s;
+    }
+  }
 `;
 export default Header;
