@@ -209,6 +209,7 @@ const Login = styled.a`
   text-transform: uppercase;
   letter-spacing: 1.5px;
   border: 1px solid white;
+  cursor: pointer;
   transition: all 0.2s ease-out 0s;
 
   &: hover {
